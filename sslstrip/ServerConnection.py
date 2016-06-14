@@ -22,7 +22,7 @@ from twisted.web.http import HTTPClient
 
 import urlparse
 
-from change import local_host, replaceCookie, tld, path_host_dict
+from change import local_host, replaceCookie, tld, path_host_dict, getNewUrl
 from bs4 import BeautifulSoup
 
 
@@ -97,7 +97,7 @@ class ServerConnection(HTTPClient):
             value = replaceCookie(value)
             self.client.responseHeaders.addRawHeader(key, value)
         elif(key.lower()=='location'):
-            #self.client.setHeaders(key,change.getNewUrl(value))
+            self.client.setHeader(key,getNewUrl(value))
             pass
         else:
             self.client.setHeader(key, value)
