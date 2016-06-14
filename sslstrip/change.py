@@ -1,6 +1,6 @@
 import tldextract
 import urlparse
-target_host = "www.google.com"
+target_host = "www.paypal.com"
 local_host = "localhost"
 
 tld = tldextract.extract(target_host).registered_domain
@@ -16,6 +16,7 @@ def getHost(path):
 
 def replaceCookie(value):
     replace = [".www.google.com","www.google.com",".google.com","google.com"]
+    replace = [".yahoo.com", "www.yahoo.com",".yahoo.com","yahoo.com"]
     for x in replace:
         value = value.replace(x, local_host)
     return value

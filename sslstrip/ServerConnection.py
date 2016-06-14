@@ -152,8 +152,9 @@ class ServerConnection(HTTPClient):
             url = match.group()
             host = urlparse.urlparse(url).netloc
             if tld in host:
-                index = url.find('/', 8)
-                path = url[index:]
+                #index = url.find('/', 8)
+                #path = url[index:]
+                path = urlparse.urlparse(url).path
                 replace_dict[url] = path
 
         '''
@@ -184,7 +185,7 @@ class ServerConnection(HTTPClient):
                 continue
             data = data.replace(link, path)
             if len(path)>=5:
-                path_host_dict[path[:5]] = urlparse.urlparse(link).netloc
+                path_host_dict[path[:15]] = urlparse.urlparse(link).netloc
                 print path_host_dict
 
         return data
