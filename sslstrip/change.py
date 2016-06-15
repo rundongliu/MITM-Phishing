@@ -21,6 +21,7 @@ def replaceCookie(value):
     for x in replace:
         value = value.replace(x, local_host)
     return value
+
 def getNewUrl(url):
     topDomain = tldextract.extract(url).registered_domain
     if tld==topDomain:

