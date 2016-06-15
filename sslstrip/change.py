@@ -1,6 +1,6 @@
 import tldextract
 import urlparse
-target_host = "www.paypal.com"
+target_host = "www.google.com"
 local_host = "localhost"
 local_host = "10.2.2.112"
 tld = tldextract.extract(target_host).registered_domain

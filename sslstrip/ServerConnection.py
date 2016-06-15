@@ -23,7 +23,6 @@ from twisted.web.http import HTTPClient
 import urlparse
 
 from change import local_host, replaceCookie, tld, path_host_dict, getNewUrl
-from bs4 import BeautifulSoup
 
 
 class ServerConnection(HTTPClient):
@@ -126,7 +125,7 @@ class ServerConnection(HTTPClient):
             logging.debug("Decompressing content...")
             data = gzip.GzipFile('', 'rb', 9, StringIO.StringIO(data)).read()
             
-        #logging.log(self.getLogLevel(), "Read from server:\n" + data)
+        logging.log(self.getLogLevel(), "Read from server:\n" + data)
 
         data = self.replaceLinks(data)
         
@@ -142,8 +141,6 @@ class ServerConnection(HTTPClient):
         replace_dict = {}
 
         data = data.replace('&amp;', '&') 
-        
-        
       
         iterator = re.finditer(ServerConnection.urlExpression, data)
         
@@ -156,26 +153,7 @@ class ServerConnection(HTTPClient):
                 #path = url[index:]
                 path = urlparse.urlparse(url).path
                 replace_dict[url] = path
-
-        '''
-
-        soup = BeautifulSoup(data, "lxml")
-        links = [ x["href"] for x in soup.findAll("a", href=True)]
-        links += [x["action"] for x in soup.findAll("form", action=True)]
-
-        for link in links:
-            if link.startswith("/") or link.startswith("."):
-                continue
-            start_link = link
-            if link.startswith("http"):
-                start_link = start_link[8:]
-            
-            index = start_link.find('/', 7)
-            path = start_link[index:]
-
-            replace_dict[link]  = path
-        '''
-
+        
         sorted_list = sorted(replace_dict.items(), key=lambda x: len(x[0]))
 
         for x in sorted_list:
@@ -186,7 +164,6 @@ class ServerConnection(HTTPClient):
             data = data.replace(link, path)
             if len(path)>=5:
                 path_host_dict[path[:15]] = urlparse.urlparse(link).netloc
-                print path_host_dict
 
         return data
     
