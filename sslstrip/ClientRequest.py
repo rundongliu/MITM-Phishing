@@ -36,7 +36,7 @@ from URLMonitor import URLMonitor
 from CookieCleaner import CookieCleaner
 from DnsCache import DnsCache
 
-from change import target_host,getHost
+from change import target_host,getHost, local_host
 import os
 
 class ClientRequest(Request):
@@ -94,10 +94,11 @@ class ClientRequest(Request):
         
         
         self.dnsCache.cacheResolution(realHost, address)
-       
-        if (not self.cookieCleaner.isClean(self.method, client, realHost, headers)):
+        
+        if (not self.cookieCleaner.isClean(self.method, client, local_host, headers)):
             logging.debug("Sending expired cookies...")
             self.sendExpiredCookies(realHost, path, self.cookieCleaner.getExpireHeaders(self.method, client, realHost, headers, path))
+        
         else:
             logging.debug("Sending request via SSL...")
             self.proxyViaSSL(address, self.method, path, postData, headers)
